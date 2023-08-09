@@ -62,12 +62,16 @@ def add_font(page_so_far, subtype, base_font, nth_font):
     return page_so_far
 
 
-def minimal_stream(input_str, size = 0, n = 1):
+def minimal_stream(input_strs, size = 0, n = 1, x_offset=180, y_offset=600):
     stream  = setup_indirect_obj("stream",size = size,n=n,length=102)
     initial_bytes = len(stream)
     stream +=      b'    /F1 18 Tf\n'
-    stream +=      b'    180 400 Td\n'
-    stream += bytes('('+input_str+') Tj\n','utf-8')
+    stream +=      b'    18 TL\n'  # Set leading (vertical distance between lines)
+    stream += bytes(f'    {x_offset} {y_offset} Td\n', 'utf-8')  # Set initial position
+    for input_str in input_strs:
+        stream += bytes('('+input_str+') Tj\n','utf-8')
+        stream += b'    T*\n'  # Move to next line
+
     corrected_byte_count = 10 + len(stream) - initial_bytes
     print("message byte count", corrected_byte_count)
 
@@ -99,12 +103,16 @@ def end_of_file(xref_bytes):
 
 def process(file):
     try:
-        f = open(args['target'],'r')
-        print("Starting to process", args['target'],'...')
-        filename, file_extension = os.path.splitext(args['target'])
+        f = open(file,'r')
+        print("Starting to process", file,'...')
+        filename, file_extension = os.path.splitext(file)
+        print(file_extension)
+        assert(file_extension[1:] in ['mora', 'mor', 'MORA', 'MOR'])
         lines = f.readlines()
-    except:
+        print(lines)
+    except Exception as err:
         print("Had some trouble opening", args['target'],'... likely wrong filename or directory.')
+        print(traceback.format_exc())
         sys.exit()
     finally:
         f.close()
@@ -123,7 +131,7 @@ def process(file):
         p.write(pages+b'\n')
         n, page = minimal_page(n=n)
         p.write(page+b'\n')
-        text_bytes, (n, stream) = minimal_stream(lines[0],n=n)
+        text_bytes, (n, stream) = minimal_stream(lines,n=n)
         byte_adjust = (text_bytes-55)
 
         p.write(stream+b'\n')
