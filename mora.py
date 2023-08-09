@@ -1,5 +1,5 @@
 import argparse
-
+from parser import parse_mora_file
 import traceback
 import sys
 import os
@@ -10,7 +10,7 @@ def minimal_header():
     return head
 
 def setup_indirect_obj(obj_type, size, n, length = -1):
-    obj_string = bytes(''+str(n)+' '+str(size)+' obj\n', 'utf-8')
+    obj_string = bytes(''+str(n)+' 0 obj\n', 'utf-8')
     if obj_type == 'stream':
         assert(length > 0)
         obj_string += bytes(' << /Length '+str(length)+ ' >>\n', 'utf-8')
@@ -30,9 +30,9 @@ def teardown_indirect_obj(obj_string, n, obj_type = "object"):
         obj_string += b'endobj\n'
     return n+1, obj_string
 
-def minimal_catalog(size = 0, n=1):
+def minimal_catalog(size = 0, Pages_index = 2,  n=1):
     catalog = setup_indirect_obj("Catalog", size, n)
-    catalog += b'     /Pages 2 0 R\n'
+    catalog += bytes('     /Pages'+' '+str(Pages_index)+' 0 R\n', 'utf-8')
     return teardown_indirect_obj(catalog, n)
 
 def minimal_pages(size = 0, n=1):
